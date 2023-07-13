@@ -946,31 +946,62 @@ bool Collision::IsCollision(const AABB& a, const OBB& b) {
 bool Collision::IsCollision(const OBB& a, const OBB& b) {
 
 	MyMatrix4x4 worldMat = {
-		a.orientations[0].x,a.orientations[0].y,a.orientations[0].z,0,
-		a.orientations[1].x,a.orientations[1].y,a.orientations[1].z,0,
-		a.orientations[2].x,a.orientations[2].y,a.orientations[2].z,0,
-		a.center.x,a.center.y,a.center.z,1
+		b.orientations[0].x,b.orientations[0].y,b.orientations[0].z,0,
+		b.orientations[1].x,b.orientations[1].y,b.orientations[1].z,0,
+		b.orientations[2].x,b.orientations[2].y,b.orientations[2].z,0,
+		b.center.x,b.center.y,b.center.z,1
 	};
-
-	MyMatrix4x4 rotateMat = {
-		a.orientations[0].x,a.orientations[0].y,a.orientations[0].z,0,
-		a.orientations[1].x,a.orientations[1].y,a.orientations[1].z,0,
-		a.orientations[2].x,a.orientations[2].y,a.orientations[2].z,0,
-		0,0,0,1
-	};
-
-	MyMatrix4x4 worldMatInverse = MyMatrix4x4::Inverse(worldMat);
-
-	MyMatrix4x4 rotateMatInverse = MyMatrix4x4::Inverse(rotateMat);
-
-	AABB aabb = { MyVector3(a.size) * (-1), a.size };
 	
-	OBB obb = {};
-	obb.center = MyMatrix4x4::Transform(b.center, worldMatInverse);
-	obb.size = MyMatrix4x4::Transform(b.size, rotateMatInverse);
-	for (int i = 0; i < 3; i++) {
-		obb.orientations[i] = MyMatrix4x4::Transform(b.orientations[i], rotateMatInverse);
+	MyVector3 verteces[8] = {
+		{-b.size.x,b.size.y,-b.size.z},
+		{b.size.x,b.size.y,-b.size.z},
+		{b.size.x,b.size.y,b.size.z},
+		{-b.size.x,b.size.y,b.size.z},
+		{-b.size.x,-b.size.y,-b.size.z},
+		{b.size.x,-b.size.y,-b.size.z},
+		{b.size.x,-b.size.y,b.size.z},
+		{-b.size.x,-b.size.y,b.size.z},
+	};
+
+	for (int i = 0; i < 8; i++) {
+		verteces[i] = MyMatrix4x4::Transform(verteces[i], worldMat);
 	}
 
-	return IsCollision(aabb, obb);
+	Segment s = { verteces[3],verteces[0] - verteces[3] };
+
+	if (IsCollision(a, s)) {
+		return true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		s = { verteces[i],verteces[i + 1] - verteces[i] };
+
+		if (IsCollision(a, s)) {
+			return true;
+		}
+	}
+
+	s = { verteces[7],verteces[4] - verteces[7] };
+
+	if (IsCollision(a, s)) {
+		return true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		s = { verteces[i + 4],verteces[i + 1 + 4] - verteces[i + 4] };
+
+		if (IsCollision(a, s)) {
+			return true;
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		s = { verteces[i],verteces[i + 4] - verteces[i] };
+
+		if (IsCollision(a, s)) {
+			return true;
+		}
+	}
+
+	return false;
 }
