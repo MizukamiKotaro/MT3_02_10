@@ -885,9 +885,7 @@ bool Collision::IsCollision(const AABB& a, const OBB& b) {
 		b.center.x,b.center.y,b.center.z,1
 	};
 
-	AABB aabb = { MyVector3(b.size) * (-1), b.size };
-
-	MyVector3 radius = (MyVector3(aabb.max) - aabb.min) / 2.0f;
+	MyVector3 radius = b.size;
 
 	MyVector3 verteces[8] = {
 		{-radius.x,radius.y,-radius.z},
@@ -904,43 +902,88 @@ bool Collision::IsCollision(const AABB& a, const OBB& b) {
 		verteces[i] = MyMatrix4x4::Transform(verteces[i], worldMat);
 	}
 
-	Segment s = { verteces[3],verteces[0] - verteces[3] };
+	MyVector3 verteces1[8] = {
+		{a.min.x,a.max.y,a.min.z},
+		{a.max.x,a.max.y,a.min.z},
+		{a.max.x,a.max.y,a.max.z},
+		{a.min.x,a.max.y,a.max.z},
+		{a.min.x,a.min.y,a.min.z},
+		{a.max.x,a.min.y,a.min.z},
+		{a.max.x,a.min.y,a.max.z},
+		{a.min.x,a.min.y,a.max.z},
+	};
 
-	if (IsCollision(a, s)) {
-		return true;
-	}
+	MyVector3 min[2] = {};
+	MyVector3 max[2] = {};
 
-	for (int i = 0; i < 3; i++) {
-		s = { verteces[i],verteces[i + 1] - verteces[i] };
+	MyVector3 hoge[3] = {
+		{1.0f,0.0f,0.0f},
+		{0.0f,1.0f,0.0f},
+		{0.0f,0.0f,1.0f}
+	};
 
-		if (IsCollision(a, s)) {
-			return true;
+	float len[2] = {};
+	float length = 0;
+
+	MyVector3 close = {};
+
+	MyVector3 ma = {};
+	MyVector3 mi = {};
+
+	Line line = {};
+	for (int j = 0; j < 6; j++) {
+
+		if (j < 3) {
+			line.diff = b.orientations[j];
+		}
+		else {
+			line.diff = hoge[j - 3];
+		}
+
+		for (int i = 0; i < 8; i++) {
+			if (i == 0) {
+				min[0] = Calc::ClosestPoint(verteces[i], line);
+				max[0] = min[0];
+				min[1] = Calc::ClosestPoint(verteces1[i], line);
+				max[1] = min[0];
+			}
+			else {
+				close = Calc::ClosestPoint(verteces[i], line);
+				min[0].x = (std::min)(min[0].x, close.x);
+				min[0].y = (std::min)(min[0].y, close.y);
+				min[0].z = (std::min)(min[0].z, close.z);
+				max[0].x = (std::max)(max[0].x, close.x);
+				max[0].y = (std::max)(max[0].y, close.y);
+				max[0].z = (std::max)(max[0].z, close.z);
+				close = Calc::ClosestPoint(verteces1[i], line);
+				min[1].x = (std::min)(min[1].x, close.x);
+				min[1].y = (std::min)(min[1].y, close.y);
+				min[1].z = (std::min)(min[1].z, close.z);
+				max[1].x = (std::max)(max[1].x, close.x);
+				max[1].y = (std::max)(max[1].y, close.y);
+				max[1].z = (std::max)(max[1].z, close.z);
+			}
+		}
+
+		len[0] = Calc::MakeLength(max[0], min[0]);
+		len[1] = Calc::MakeLength(max[1], min[1]);
+
+		ma.x = (std::max)(max[0].x, max[1].x);
+		ma.y = (std::max)(max[0].y, max[1].y);
+		ma.z = (std::max)(max[0].z, max[1].z);
+		mi.x = (std::min)(min[0].x, min[1].x);
+		mi.y = (std::min)(min[0].y, min[1].y);
+		mi.z = (std::min)(min[0].z, min[1].z);
+		length = Calc::MakeLength(ma, mi);
+
+		if (len[0] + len[1] < length) {
+			return false;
 		}
 	}
+	
 
-	s = { verteces[7],verteces[4] - verteces[7] };
+	return true;
 
-	if (IsCollision(a, s)) {
-		return true;
-	}
-
-	for (int i = 4; i < 7; i++) {
-		s = { verteces[i],verteces[i + 1] - verteces[i] };
-
-		if (IsCollision(a, s)) {
-			return true;
-		}
-	}
-
-	for (int i = 0; i < 4; i++) {
-		s = { verteces[i],verteces[i + 4] - verteces[i] };
-
-		if (IsCollision(a, s)) {
-			return true;
-		}
-	}
-
-	return false;
 }
 
 bool Collision::IsCollision(const OBB& a, const OBB& b) {
@@ -963,7 +1006,7 @@ bool Collision::IsCollision(const OBB& a, const OBB& b) {
 
 	MyMatrix4x4 rotateMatInverse = MyMatrix4x4::Inverse(rotateMat);
 
-	AABB aabb = { MyVector3(a.size) * (-1), a.size };
+	AABB aabb = { MyVector3(a.size) * (-1) + a.center, MyVector3(a.size) + a.center};
 	
 	OBB obb = {};
 	obb.center = MyMatrix4x4::Transform(b.center, worldMatInverse);
