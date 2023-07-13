@@ -924,8 +924,8 @@ bool Collision::IsCollision(const AABB& a, const OBB& b) {
 		return true;
 	}
 
-	for (int i = 4; i < 7; i++) {
-		s = { verteces[i],verteces[i + 1] - verteces[i] };
+	for (int i = 0; i < 3; i++) {
+		s = { verteces[i + 4],verteces[i + 1 + 4] - verteces[i + 4] };
 
 		if (IsCollision(a, s)) {
 			return true;
