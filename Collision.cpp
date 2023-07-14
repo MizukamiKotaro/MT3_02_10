@@ -940,6 +940,59 @@ bool Collision::IsCollision(const AABB& a, const OBB& b) {
 		}
 	}
 
+	radius = (MyVector3(a.max) -a.min) / 2.0f;
+
+	MyVector3 verteces2[8] = {
+		{-radius.x,radius.y,-radius.z},
+		{radius.x,radius.y,-radius.z},
+		{radius.x,radius.y,radius.z},
+		{-radius.x,radius.y,radius.z},
+		{-radius.x,-radius.y,-radius.z},
+		{radius.x,-radius.y,-radius.z},
+		{radius.x,-radius.y,radius.z},
+		{-radius.x,-radius.y,radius.z},
+	};
+
+	for (int i = 0; i < 8; i++) {
+		verteces2[i] += MyVector3(a.min) + radius;
+	}
+
+	s = { verteces2[3],verteces2[0] - verteces2[3] };
+
+	if (IsCollision(b, s)) {
+		return true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		s = { verteces2[i],verteces2[i + 1] - verteces2[i] };
+
+		if (IsCollision(b, s)) {
+			return true;
+		}
+	}
+
+	s = { verteces2[7],verteces2[4] - verteces2[7] };
+
+	if (IsCollision(b, s)) {
+		return true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		s = { verteces2[i + 4],verteces2[i + 1 + 4] - verteces2[i + 4] };
+
+		if (IsCollision(b, s)) {
+			return true;
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		s = { verteces2[i],verteces2[i + 4] - verteces2[i] };
+
+		if (IsCollision(b, s)) {
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -999,6 +1052,64 @@ bool Collision::IsCollision(const OBB& a, const OBB& b) {
 		s = { verteces[i],verteces[i + 4] - verteces[i] };
 
 		if (IsCollision(a, s)) {
+			return true;
+		}
+	}
+
+	MyMatrix4x4 worldMat2 = {
+		a.orientations[0].x,a.orientations[0].y,a.orientations[0].z,0,
+		a.orientations[1].x,a.orientations[1].y,a.orientations[1].z,0,
+		a.orientations[2].x,a.orientations[2].y,a.orientations[2].z,0,
+		a.center.x,a.center.y,a.center.z,1
+	};
+
+	MyVector3 verteces2[8] = {
+		{-a.size.x,a.size.y,-a.size.z},
+		{a.size.x,a.size.y,-a.size.z},
+		{a.size.x,a.size.y,a.size.z},
+		{-a.size.x,a.size.y,a.size.z},
+		{-a.size.x,-a.size.y,-a.size.z},
+		{a.size.x,-a.size.y,-a.size.z},
+		{a.size.x,-a.size.y,a.size.z},
+		{-a.size.x,-a.size.y,a.size.z},
+	};
+
+	for (int i = 0; i < 8; i++) {
+		verteces2[i] = MyMatrix4x4::Transform(verteces2[i], worldMat2);
+	}
+
+	s = { verteces2[3],verteces2[0] - verteces2[3] };
+
+	if (IsCollision(b, s)) {
+		return true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		s = { verteces2[i],verteces2[i + 1] - verteces2[i] };
+
+		if (IsCollision(b, s)) {
+			return true;
+		}
+	}
+
+	s = { verteces2[7],verteces2[4] - verteces2[7] };
+
+	if (IsCollision(b, s)) {
+		return true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		s = { verteces2[i + 4],verteces2[i + 1 + 4] - verteces2[i + 4] };
+
+		if (IsCollision(b, s)) {
+			return true;
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		s = { verteces2[i],verteces2[i + 4] - verteces2[i] };
+
+		if (IsCollision(b, s)) {
 			return true;
 		}
 	}
